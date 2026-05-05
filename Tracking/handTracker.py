@@ -30,7 +30,7 @@ while True:
 
 
     img = handDetector.findHands(img)
-    hands = handDetector.findPosition(img, draw=False)
+    hands = handDetector.findPosition(img, draw = False)
 
     cv2.imshow("Image", img)
     if cv2.waitKey(1) & 0xFF == ord('q'):

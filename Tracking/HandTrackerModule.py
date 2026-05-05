@@ -11,7 +11,7 @@ import os
 _MODEL_PATH = os.path.join(os.path.dirname(__file__), 'hand_landmarker.task')
 
 HAND_CONNECTIONS = [
-    (0, 1), (1, 2), (2, 3), (3, 4),
+    (0, 1), (1, 2), (2, 3), (3, 4), # thumb
     (5, 6), (6, 7), (7, 8),
     (9, 10), (10, 11), (11, 12),
     (13, 14), (14, 15), (15, 16),
