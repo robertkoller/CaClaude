@@ -1,2 +1,3 @@
 /venv
 *.task
+/Tracking/__pycache__

@@ -1,8 +1,5 @@
 import os
-# terminal cloggers ridder
-os.environ['GLOG_minloglevel'] = '3'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
+import math
 import cv2
 import mediapipe as mp
 import time
@@ -11,12 +8,18 @@ import os
 _MODEL_PATH = os.path.join(os.path.dirname(__file__), 'hand_landmarker.task')
 
 HAND_CONNECTIONS = [
-    (0, 1), (1, 2), (2, 3), (3, 4), # thumb
-    (5, 6), (6, 7), (7, 8),
-    (9, 10), (10, 11), (11, 12),
-    (13, 14), (14, 15), (15, 16),
-    (17, 18), (18, 19), (19, 20),
-    (0, 5), (5, 9), (9, 13), (13, 17), (0, 17)
+    (0,1),(1,2),(2,3),(3,4),        # Thumb
+    (0,5),(5,6),(6,7),(7,8),        # Index
+    (5,9),(9,10),(10,11),(11,12),   # Middle
+    (9,13),(13,14),(14,15),(15,16), # Ring
+    (13,17),(17,18),(18,19),(19,20),# Pinky
+    (0,17)                          # Palm base connection
+]
+
+keys = [
+    list("QWERTYUIOP"),
+    list("ASDFGHJKL"),
+    list("ZXCVBNM")
 ]
 
 
@@ -64,29 +67,63 @@ class handDetector():
                     if draw:
                         cv2.circle(img, (cx, cy), 15, (255, 0, 255), cv2.FILLED)
         return lmList
+    
+
+def fingersUp(lmList):
+    fingers = []
+
+    # Thumb (compare x because it moves sideways)
+    if lmList[4][1] > lmList[3][1]:
+        fingers.append(1)
+    else:
+        fingers.append(0)
+
+    # Other fingers (compare y)
+    tips = [8, 12, 16, 20]
+    pips = [6, 10, 14, 18]
+
+    for tip, pip in zip(tips, pips):
+        if lmList[tip][2] < lmList[pip][2]:  # higher = up
+            fingers.append(1)
+        else:
+            fingers.append(0)
+
+    return fingers
+
+def relayHandGestures(lmList):
+    if len(lmList) != 0:
+        fingers = fingersUp(lmList)
+
+        # Example gestures
+        if fingers == [0,1,0,0,0]:
+            print("Pointing (move cursor)")
+
+        elif fingers == [0,1,1,0,0]:
+            print("Peace sign (maybe scroll)")
+
+        elif fingers == [0,0,0,0,0]:
+            print("Fist (click)")
+
+def drawKeyboard(img, keys):
+    keyList = []
+    startX, startY = 50, 200
+    boxW, boxH = 60, 60
+
+    for i, row in enumerate(keys):
+        for j, key in enumerate(row):
+            x = startX + j * (boxW + 10)
+            y = startY + i * (boxH + 10)
+
+            cv2.rectangle(img, (x, y), (x + boxW, y + boxH), (255, 0, 255), 2)
+            cv2.putText(img, key, (x + 15, y + 40),
+                        cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 255), 2)
+
+            keyList.append((key, x, y, boxW, boxH))
+
+    return keyList
 
 
-def main():
-    pTime = 0
-    cap = cv2.VideoCapture(0)
-    detector = handDetector()
-    while True:
-        success, img = cap.read()
-        img = detector.findHands(img)
-        lmList = detector.findPosition(img)
-        if len(lmList) != 0:
-            print(lmList[0])
-
-        cTime = time.time()
-        fps = 1 / (cTime - pTime)
-        pTime = cTime
-
-        cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3,
-                    (255, 0, 255), 3)
-
-        cv2.imshow("Image", img)
-        cv2.waitKey(1)
-
-
-if __name__ == "__main__":
-    main()
+def findDistance(p1, p2, lmList):
+    x1, y1 = lmList[p1][1], lmList[p1][2]
+    x2, y2 = lmList[p2][1], lmList[p2][2]
+    return math.hypot(x2 - x1, y2 - y1)

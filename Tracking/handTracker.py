@@ -1,8 +1,4 @@
 import os
-# this stuff is to not clog your terminal
-os.environ['GLOG_minloglevel'] = '3'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 import cv2
 import HandTrackerModule as htm
 import time
@@ -14,11 +10,12 @@ camScalar = 120 # 120 = 1920:1080
 
 widthCam, heightCam = ratioW * camScalar, ratioH * camScalar
 
-cap = cv2.VideoCapture(1)
+cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, widthCam)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, heightCam)
 
-handDetector = htm.handDetector(detectionCon = 0.75)
+handDetector = htm.handDetector()
+pTime = 0
 
 while True:
     success, img = cap.read()
@@ -30,7 +27,15 @@ while True:
 
 
     img = handDetector.findHands(img)
-    hands = handDetector.findPosition(img, draw = False)
+    lmList = handDetector.findPosition(img)
+    htm.relayHandGestures(lmList)
+
+    cTime = time.time()
+    fps = 1 / (cTime - pTime)
+    pTime = cTime
+
+    cv2.putText(img, str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3,
+                    (255, 0, 255), 3)
 
     cv2.imshow("Image", img)
     if cv2.waitKey(1) & 0xFF == ord('q'):
