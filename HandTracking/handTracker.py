@@ -8,6 +8,34 @@ from PIL import Image, ImageTk
 import HandTrackerModule as htm
 import time
 
+def find_builtin_camera():
+    """Return the OpenCV index of the physical built-in camera.
+
+    Queries AVFoundation directly so it works even when iPhone Continuity
+    Camera is active (which shifts device indices).  Falls back to 0.
+    """
+    try:
+        import AVFoundation as avf
+        device_types = [avf.AVCaptureDeviceTypeBuiltInWideAngleCamera]
+        for name in ('AVCaptureDeviceTypeContinuityCamera',
+                     'AVCaptureDeviceTypeExternal',
+                     'AVCaptureDeviceTypeExternalUnknown'):
+            t = getattr(avf, name, None)
+            if t:
+                device_types.append(t)
+        session = avf.AVCaptureDeviceDiscoverySession \
+            .discoverySessionWithDeviceTypes_mediaType_position_(
+                device_types,
+                avf.AVMediaTypeVideo,
+                avf.AVCaptureDevicePositionUnspecified,
+            )
+        for i, device in enumerate(session.devices()):
+            if device.deviceType() == avf.AVCaptureDeviceTypeBuiltInWideAngleCamera:
+                return i
+    except Exception:
+        pass
+    return 0
+
 ALWAYS_ON_TOP = True
 
 ratioW = 16
@@ -18,7 +46,7 @@ displayScalar = 30  # adjust this to resize the window (60 = 960x540)
 widthCam, heightCam = ratioW * camScalar, ratioH * camScalar
 displayW, displayH = ratioW * displayScalar, ratioH * displayScalar
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(find_builtin_camera())
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, widthCam)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, heightCam)
 
