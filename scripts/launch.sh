@@ -26,7 +26,7 @@ if [ "$(realpath "$PROJECT_DIR")" != "$(realpath "$ROOT_DIR")" ]; then
     echo "Injected CaClaude CLAUDE.md"
 fi
 
-# Cleanup
+# Cleanup — only restore CLAUDE.md; leave the tmux session alive for later use
 cleanup() {
     echo ""
     if [ "$INJECT_MD" = true ]; then
@@ -37,19 +37,18 @@ cleanup() {
             echo "Restored original CLAUDE.md"
         fi
     fi
-    tmux kill-session -t "$SESSION" 2>/dev/null || true
-    echo "Done."
+    echo "Done. Tmux session '$SESSION' left running — attach with: tmux attach -t $SESSION"
 }
 trap cleanup EXIT
 
-# Kill any stale session
-tmux kill-session -t "$SESSION" 2>/dev/null && echo "Killed old session." || true
-
-# Create new tmux session, cd into project, then launch Claude
-tmux new-session -d -s "$SESSION" -x 220 -y 55
-tmux send-keys -t "$SESSION" "cd \"$PROJECT_DIR\" && claude" Enter
-
-echo "Tmux session '$SESSION' created."
+# Reuse an existing session if one is already open, otherwise create a fresh one
+if tmux has-session -t "$SESSION" 2>/dev/null; then
+    echo "Reusing existing tmux session '$SESSION'."
+else
+    tmux new-session -d -s "$SESSION" -x 220 -y 55
+    tmux send-keys -t "$SESSION" "cd \"$PROJECT_DIR\" && claude" Enter
+    echo "Tmux session '$SESSION' created."
+fi
 
 # Open a new Terminal window attached to that session
 osascript <<'APPLESCRIPT'

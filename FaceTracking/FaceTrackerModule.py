@@ -139,7 +139,7 @@ class HeadGestureController():
         return None
 
 
-def detectNod(yHistory, dip=40, window=20):
+def detectNod(yHistory, dip=25, window=13):
     if len(yHistory) < window:
         return False
     segment  = yHistory[-window:]
@@ -149,8 +149,8 @@ def detectNod(yHistory, dip=40, window=20):
     return peak - baseline > dip and peak - end > dip * 0.5
 
 
-def detectShake(xHistory, amplitude=45, reversals=2):
-    if len(xHistory) < 16:
+def detectShake(xHistory, amplitude=28, reversals=2):
+    if len(xHistory) < 10:
         return False
     velocities   = [xHistory[i + 1] - xHistory[i] for i in range(len(xHistory) - 1)]
     sign_changes = sum(1 for i in range(len(velocities) - 1)
