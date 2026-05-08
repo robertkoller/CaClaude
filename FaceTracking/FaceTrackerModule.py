@@ -13,7 +13,7 @@ FACE_OUTLINE = [10,338,297,332,284,251,389,356,454,323,361,288,
 
 BLINK_THRESHOLD = 0.4
 
-# Gesture → key sent to Claude
+# Gesture to key sent to Claude
 TMUX_SESSION = 'caclaude'
 GESTURE_MAP  = {
     'nod_a':   '1',
@@ -23,25 +23,15 @@ GESTURE_MAP  = {
 }
 
 
+_EXTERNAL_KEYWORDS = ('iphone', 'ipad', 'continuity', 'android', 'droidcam')
+
 def find_builtin_camera():
     try:
-        import AVFoundation as avf
-        device_types = [avf.AVCaptureDeviceTypeBuiltInWideAngleCamera]
-        for name in ('AVCaptureDeviceTypeContinuityCamera',
-                     'AVCaptureDeviceTypeExternal',
-                     'AVCaptureDeviceTypeExternalUnknown'):
-            t = getattr(avf, name, None)
-            if t:
-                device_types.append(t)
-        session = avf.AVCaptureDeviceDiscoverySession \
-            .discoverySessionWithDeviceTypes_mediaType_position_(
-                device_types,
-                avf.AVMediaTypeVideo,
-                avf.AVCaptureDevicePositionUnspecified,
-            )
-        for i, device in enumerate(session.devices()):
-            if device.deviceType() == avf.AVCaptureDeviceTypeBuiltInWideAngleCamera:
-                return i
+        from cv2_enumerate_cameras import enumerate_cameras
+        import cv2
+        for cam in enumerate_cameras(cv2.CAP_AVFOUNDATION):
+            if not any(k in cam.name.lower() for k in _EXTERNAL_KEYWORDS):
+                return cam.index
     except Exception:
         pass
     return 0

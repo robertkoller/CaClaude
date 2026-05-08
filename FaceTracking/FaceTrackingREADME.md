@@ -43,7 +43,7 @@ pip install opencv-python mediapipe pillow numpy pyobjc-framework-AVFoundation
 
 ## The camera overlay window
 
-A small floating window appears in the top-right corner of your screen. It is always on top by default and shows your face with the gesture HUD overlaid.
+A small floating window appears in the top-right corner of your screen. It is always on top by default and shows your face with the gesture HUD overlaid. The window is freely resizable — drag any corner or edge and everything scales with it.
 
 ### Buttons
 
@@ -52,8 +52,6 @@ A small floating window appears in the top-right corner of your screen. It is al
 | **● CAM** | Green | Toggle camera feed on/off. Detection keeps running when off — you see a dark screen instead of video. |
 | **● HUD** | Blue | Toggle the text overlay and face wireframe on/off. |
 | **● TOP** | Orange | Toggle always-on-top. Click to let other windows cover the overlay. |
-
-The window is freely resizable — drag any corner or edge. Everything scales with it.
 
 ### Status dot
 
@@ -65,7 +63,7 @@ A small dot in the top-right corner of the video area is always visible regardle
 
 ## Gesture controls
 
-Gestures only register when you hold a wink. This prevents accidental triggers during normal conversation or blinking.
+Gestures only register when you hold a wink. This prevents accidental triggers during normal blinking.
 
 ### Activation
 
@@ -119,21 +117,25 @@ If you need to type something that isn't a numbered option, you can always type 
 ```
 Camera (built-in Mac)
     └─▶ FaceTrackerModule.py
-            ├─ FaceDetector       — MediaPipe FaceLandmarker model
-            │    ├─ findFace()    — runs inference, optionally draws wireframe + nose dot
-            │    ├─ getNoseTip()  — returns (x, y) pixel coords of landmark #4
-            │    └─ getEyeStates() — reads eyeBlinkLeft/Right blendshape scores
-            └─ HeadGestureController
-                 └─ update()      — buffers last 30 nose positions, detects nod/shake
-                                    only when a wink is held
+            ├─ find_builtin_camera() — queries AVFoundation via PyObjC to find the
+            │                          physical built-in camera, ignoring iPhone
+            │                          Continuity Camera which can shift indices
+            ├─ FaceDetector          — MediaPipe FaceLandmarker model
+            │    ├─ findFace()       — runs inference, optionally draws wireframe + nose dot
+            │    ├─ getNoseTip()     — returns (x, y) pixel coords of landmark #4
+            │    └─ getEyeStates()   — reads eyeBlinkLeft/Right blendshape scores
+            ├─ HeadGestureController
+            │    └─ update()         — buffers last 30 nose positions, detects nod/shake
+            │                          only when a wink is held
+            ├─ send_to_tmux()        — calls `tmux send-keys -t caclaude <key> Enter`
+            │                          No window focus needed. Cannot type into anything
+            │                          other than the named tmux session.
+            ├─ hud()                 — draws outlined text readable on any background
+            └─ GESTURE_MAP           — maps gesture names to keys ('nod_a' → '1', etc.)
 
-claudeRelay.py
-    ├─ find_builtin_camera()  — queries AVFoundation via PyObjC to find the physical
-    │                           built-in camera index, ignoring iPhone Continuity Camera
-    ├─ Main loop              — reads frames, runs detection, builds display image
-    └─ send_to_tmux()         — calls `tmux send-keys -t caclaude <key> Enter`
-                                No window focus needed. Cannot type into anything
-                                other than the named tmux session.
+FaceTracker.py
+    └─ UI + main loop — tkinter window, toggle buttons, frame display
+                        All logic lives in FaceTrackerModule; this file is display only.
 
 launch.sh
     ├─ Copies CLAUDE.md into the project directory
@@ -156,7 +158,7 @@ Looks at the last 16+ frames of nose X-position. A shake is confirmed when:
 
 ### Camera selection
 
-On macOS, iPhone Continuity Camera can insert itself as a higher-priority device and shift OpenCV's index mapping. `find_builtin_camera()` uses PyObjC to query `AVCaptureDeviceDiscoverySession` and finds the device explicitly typed as `AVCaptureDeviceTypeBuiltInWideAngleCamera`, then returns its position index. This is then passed to `cv2.VideoCapture()`.
+On macOS, iPhone Continuity Camera can insert itself as a higher-priority device and shift OpenCV's index mapping. `find_builtin_camera()` uses PyObjC to query `AVCaptureDeviceDiscoverySession` and finds the device explicitly typed as `AVCaptureDeviceTypeBuiltInWideAngleCamera`, then returns its position index for use with `cv2.VideoCapture()`.
 
 ---
 
@@ -164,8 +166,8 @@ On macOS, iPhone Continuity Camera can insert itself as a higher-priority device
 
 | File | Purpose |
 |------|---------|
-| `launch.sh` | Entry point — sets up tmux, injects CLAUDE.md, runs relay |
-| `FaceTracking/claudeRelay.py` | Camera overlay window + gesture-to-tmux relay |
-| `FaceTracking/FaceTrackerModule.py` | MediaPipe face detection + gesture logic |
+| `launch.sh` | Entry point — sets up tmux, injects CLAUDE.md, runs FaceTracker |
+| `FaceTracking/FaceTracker.py` | Tkinter overlay window, buttons, main display loop |
+| `FaceTracking/FaceTrackerModule.py` | All logic — camera selection, detection, gestures, tmux relay |
 | `FaceTracking/face_landmarker.task` | MediaPipe model file (bundled) |
 | `CLAUDE.md` | Instructions injected into target projects |

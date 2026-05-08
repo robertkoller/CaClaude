@@ -3,9 +3,9 @@ set -e
 
 SESSION="caclaude"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"   # CaClaude repo root
 CACLAUDE_MD="$SCRIPT_DIR/CLAUDE.md"
 
-# Optional first arg: path to the project to open Claude in
 PROJECT_DIR="${1:-$PWD}"
 PROJECT_DIR="$(cd "$PROJECT_DIR" && pwd)"
 TARGET_MD="$PROJECT_DIR/CLAUDE.md"
@@ -14,9 +14,9 @@ BACKUP_MD="$PROJECT_DIR/CLAUDE.md.caclaude_backup"
 echo "=== CaClaude Launcher ==="
 echo "Project: $PROJECT_DIR"
 
-# --- Inject CLAUDE.md (skip if running from inside the CaClaude repo itself) ---
+# Inject claude.md
 INJECT_MD=false
-if [ "$(realpath "$PROJECT_DIR")" != "$(realpath "$SCRIPT_DIR")" ]; then
+if [ "$(realpath "$PROJECT_DIR")" != "$(realpath "$ROOT_DIR")" ]; then
     INJECT_MD=true
     if [ -f "$TARGET_MD" ]; then
         cp "$TARGET_MD" "$BACKUP_MD"
@@ -26,7 +26,7 @@ if [ "$(realpath "$PROJECT_DIR")" != "$(realpath "$SCRIPT_DIR")" ]; then
     echo "Injected CaClaude CLAUDE.md"
 fi
 
-# --- Cleanup on exit (runs even on Ctrl-C) ---
+# Cleanup
 cleanup() {
     echo ""
     if [ "$INJECT_MD" = true ]; then
@@ -63,12 +63,12 @@ APPLESCRIPT
 
 echo "Terminal window opened. Attach manually with: tmux attach -t $SESSION"
 echo ""
-echo "Starting face relay (close this window or press q in relay to stop)..."
+echo "Starting trackers (close either overlay window or press q to stop)..."
 sleep 0.5
 
-cd "$SCRIPT_DIR"
+cd "$ROOT_DIR"
 if [ -f venv/bin/activate ]; then
     source venv/bin/activate
 fi
 
-python3 FaceTracking/FaceTracker.py
+python3 tracker.py

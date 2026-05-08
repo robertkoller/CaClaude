@@ -8,30 +8,15 @@ from PIL import Image, ImageTk
 import HandTrackerModule as htm
 import time
 
-def find_builtin_camera():
-    """Return the OpenCV index of the physical built-in camera.
+_EXTERNAL_KEYWORDS = ('iphone', 'ipad', 'continuity', 'android', 'droidcam')
 
-    Queries AVFoundation directly so it works even when iPhone Continuity
-    Camera is active (which shifts device indices).  Falls back to 0.
-    """
+def find_builtin_camera():
     try:
-        import AVFoundation as avf
-        device_types = [avf.AVCaptureDeviceTypeBuiltInWideAngleCamera]
-        for name in ('AVCaptureDeviceTypeContinuityCamera',
-                     'AVCaptureDeviceTypeExternal',
-                     'AVCaptureDeviceTypeExternalUnknown'):
-            t = getattr(avf, name, None)
-            if t:
-                device_types.append(t)
-        session = avf.AVCaptureDeviceDiscoverySession \
-            .discoverySessionWithDeviceTypes_mediaType_position_(
-                device_types,
-                avf.AVMediaTypeVideo,
-                avf.AVCaptureDevicePositionUnspecified,
-            )
-        for i, device in enumerate(session.devices()):
-            if device.deviceType() == avf.AVCaptureDeviceTypeBuiltInWideAngleCamera:
-                return i
+        from cv2_enumerate_cameras import enumerate_cameras
+        import cv2
+        for cam in enumerate_cameras(cv2.CAP_AVFOUNDATION):
+            if not any(k in cam.name.lower() for k in _EXTERNAL_KEYWORDS):
+                return cam.index
     except Exception:
         pass
     return 0

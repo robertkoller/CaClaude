@@ -136,7 +136,9 @@ class GestureController():
                 if self.pumpCooldown == 0 and detectPump(self.scaleHistory):
                     self.keyboardActive = not self.keyboardActive
                     self.pumpCooldown = 45
+                    self.swipeCooldown = 45
                     self.scaleHistory.clear()
+                    self.wristHistory.clear()
             else:
                 self.scaleHistory.clear()
 
